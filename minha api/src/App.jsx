@@ -1,40 +1,49 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import './App.css';
+import React, { useState } from "react";
+import axios from "axios";
+import "./App.css";
 
 const App = () => {
-  const [country, setCountry] = useState('Brazil');
+  const [country, setCountry] = useState("Brazil");
   const [universities, setUniversities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [universitiesPerPage] = useState(16); // 16 universidades por página (4 por linha e 4 linhas)
+  const universitiesPerPage = 16;
 
   const fetchUniversities = async () => {
+    if (!country.trim()) {
+      alert("Digite um nome válido para o país.");
+      return;
+    }
+
     setLoading(true);
+
     try {
       const response = await axios.get(`http://universities.hipolabs.com/search?country=${country}`);
+
+      if (response.status !== 200) {
+        throw new Error("Erro na resposta da API");
+      }
+
       setUniversities(response.data);
     } catch (error) {
-      console.error('Erro ao buscar universidades:', error);
-      alert('Não foi possível carregar as informações. Tente novamente.');
+      console.error("Erro ao buscar universidades:", error.response || error.message);
+      alert("Erro ao carregar universidades. Verifique o nome do país.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Função para calcular a página atual
   const indexOfLastUniversity = currentPage * universitiesPerPage;
   const indexOfFirstUniversity = indexOfLastUniversity - universitiesPerPage;
   const currentUniversities = universities.slice(indexOfFirstUniversity, indexOfLastUniversity);
 
-  // Função para mudar de página
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <div className="app">
       <header className="search-bar">
         <h1>Encontre Sua Universidade</h1>
-        <p>Pesquise universidades ao redor do mundo para tomar uma decisão informada sobre seu futuro acadêmico.</p>
+        <p>Pesquise universidades ao redor do mundo e tome uma decisão informada sobre seu futuro acadêmico.</p>
         <div className="search-container">
           <input
             type="text"
@@ -55,23 +64,17 @@ const App = () => {
             {currentUniversities.map((university, index) => (
               <div className="card" key={index}>
                 <h3>{university.name}</h3>
-                <a
-                  href={`http://${university.domains[0]}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => {
-                    // Evitar redirecionamento padrão
-                    window.open(`http://${university.domains[0]}`, '_blank');
-                    e.preventDefault();
-                  }}
-                >
-                  {university.domains[0]}
-                </a>
+                {university.web_pages?.[0] ? (
+                  <a href={university.web_pages[0]} target="_blank" rel="noopener noreferrer">
+                    {university.web_pages[0]}
+                  </a>
+                ) : (
+                  <p>Sem site disponível</p>
+                )}
               </div>
             ))}
           </div>
 
-          {/* Paginação */}
           <div className="pagination">
             {Array.from({ length: Math.ceil(universities.length / universitiesPerPage) }, (_, index) => (
               <button key={index + 1} onClick={() => paginate(index + 1)}>
